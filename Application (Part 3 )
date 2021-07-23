@@ -1,34 +1,161 @@
-import androidx.appcompat.app.AppCompatActivity;
-
 import android.content.Intent;
+import android.graphics.Bitmap;
 import android.os.Bundle;
+import android.provider.MediaStore;
+import android.util.Base64;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageView;
 
-public class MainActivity extends AppCompatActivity {
+import androidx.appcompat.app.AppCompatActivity;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+
+import okhttp3.MultipartBody;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
+
+public class MainActivity3 extends AppCompatActivity {
 
 
-    private Button button;
+
+    private String url;
+    public JSONObject res = null;
+    private final OkHttpClient client = new OkHttpClient();
+    private ImageView ImageView;
+
+    private Button button3;
+    private Button button4;
+
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    protected void  onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        setContentView(R.layout.activity_main3);
 
-        button = (Button) findViewById(R.id.button);
-        button.setOnClickListener(new View.OnClickListener() {
+        ImageView = (ImageView) findViewById(R.id.imageView);
+        button3 = findViewById(R.id.button3);
+        button4 = findViewById(R.id.button4);
+        //ส่วนนี้จะเป็นการกำหนดปุ่มว่าปุ่มไหนเป็นปุ่มไหนในส่วนของ xml
+
+        button4.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                openMainActivity2();
-            }
+                openMainActivity4();}
+
 
         });
-// ส่วนนี้จะเป็นการกำหนดตัวปุ่มว่าให้ทำหน้าที่อะไร
+
+
+        button3.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent i = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+                startActivityForResult(i, 0);
+            }
+        });
+        // ส่วนนี้จะเป็นการกำหนดปุ่มในการเปิดกล้องเพื่อถ่ายรูป
 
     }
-    public void openMainActivity2(){
-        Intent intent = new Intent(this, MainActivity2.class);
-        startActivity(intent);
+
+    private void openMainActivity4() {
+        Intent intent = new Intent(this, MainActivity4.class);
+
+        byte[] decodedString = null;
+        String result = null;
+
+        try{
+            decodedString = Base64.decode(res.getString("img"), Base64.DEFAULT);
+            result = res.getString("result");
+
+            intent.putExtra("image",decodedString);
+            intent.putExtra("result",result);
+
+            startActivity(intent);
+
+        }catch(Exception e){
+
+// ส่วนนี้จะเป็นการแปลงจากการรับผลของ AI ที่ส่งกลับมายังตัวแอปพลิเคชันและแสดงผลในหน้าถัดไป
+        }
     }
-    //ส่วนนี้จะเป็นคำสั่งในการย้ายไป Activity ถัดไป
+
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data){
+        super.onActivityResult(requestCode, resultCode, data);
+        String url = " https://2e422603db4b.ngrok.io/predict"; // ส่วนนี้จะเป็นการใส่ Url เพื่อเชื่อมต่อกับตัวเซิร์ฟเวอร์ของ AI
+        if (resultCode == RESULT_OK){
+            Bitmap b = (Bitmap)data.getExtras().get("data");
+            ImageView.setImageBitmap(b);
+
+            Thread thread = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        res = makePost(url, b);
+
+
+                        System.out.println("in Thread : "+res);
+
+
+                    } catch (Exception e){
+                        e.printStackTrace();
+                    }
+                }
+            });
+
+            thread.start();
+        }
+    }
+    private JSONObject makePost(String uri, Bitmap bitmap){
+
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        bitmap.compress(Bitmap.CompressFormat.PNG, 100 , byteArrayOutputStream);
+        byte[] byteArray = byteArrayOutputStream .toByteArray();
+
+        String encoded = Base64.encodeToString(byteArray, Base64.DEFAULT);
+        //  แปลงรูปภาพเป็น Base64
+
+        RequestBody requestBody = new MultipartBody.Builder()
+                .setType(MultipartBody.FORM)
+                .addFormDataPart("file", encoded)
+                .build();
+
+        Request request = new Request.Builder()
+                .url(uri)
+                .post(requestBody)
+                .build();
+        System.out.println(request);
+        try (Response response = client.newCall(request).execute()) {
+            if (!response.isSuccessful()) throw new IOException("Unexpected code " + response);
+
+//            Headers responseHeaders = response.headers();
+//            for (int i = 0; i < responseHeaders.size(); i++) {
+//                System.out.println(responseHeaders.name(i) + ": " + responseHeaders.value(i));
+//            }
+
+            String str = response.body().string();
+            JSONObject resjson = new JSONObject(str);
+
+
+
+//            System.out.println("decode   "+decodedString.toString());
+            // TODO: Jsonify the request body then return base64 String
+            return resjson;
+        } catch (IOException | JSONException e) {
+            e.printStackTrace();
+        }
+
+        return  null;
+
+
+    }
+    
+
 }
