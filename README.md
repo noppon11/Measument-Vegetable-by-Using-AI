@@ -1,1 +1,2 @@
-# Measument-Vegetable-by-Using-AI
+# MEASUREMENT OF VEGETABLE pH USING AI 
+MEASUREMENT OF VEGETABLE pH USING AI is a Senior project of Electrical Engineering Student Mahidol University for classifying types of Vegetables. We select Lettuce to collect in our database. The senior project has 3 parts. Frontend, Backend, and Collect Database. Frontend, we use android studio to develop an application in the play store of android mobile in Java language. Backend has 2 parts AI and Image Processing for crop image and sends to calculate in AI algorithm for classify types of vegetable. we develop in Python language. Database, we use litmus paper for collect color of pH value form juice of vagatables.
