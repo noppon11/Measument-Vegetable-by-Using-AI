@@ -1,0 +1,225 @@
+## Artificial Intelligence using Convolution Neural Network (Deep Learning) Coding in Google Colab by Noppon Somanawattana
+
+## All Libraly. what i using for develop algorithm of convolution neural network
+
+import keras
+import tensorflow as tf
+import keras.backend as K
+import numpy as np
+import matplotlib.pyplot as plt
+import pandas as pd
+import cv2 
+import math 
+import zipfile
+import tarfile
+import pickle
+import glob
+import shutil
+import os
+import random
+
+from keras.datasets import cifar10
+from keras.layers import Conv2D, MaxPool2D,\Dropout, Dense, Input, concatenate,BatchNormalization,\GlobalAveragePooling2D, AveragePooling2D,\Flatten
+from keras.utils import np_utils
+from keras.optimizers import SGD 
+from keras.callbacks import LearningRateScheduler
+
+from tensorflow.keras import layers
+from tensorflow.keras import optimizers
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
+from tensorflow.keras.preprocessing import sequence
+from tensorflow.keras.models import Sequential, Model
+from tensorflow.keras.layers import GRU, Dropout
+from tensorflow.keras.models import load_model
+from tensorflow.keras.layers import Embedding, Reshape, Activation, Input, Dense, Masking, Conv1D, Bidirectional, TimeDistributed, Flatten, LSTM, Conv2D, MaxPooling2D
+from tensorflow.keras.preprocessing.sequence import skipgrams
+from tensorflow.keras.preprocessing import sequence
+from tensorflow.keras import backend as K
+from tensorflow.keras.optimizers import Adam
+
+from tensorflow.python.keras.layers.merge import Dot
+from tensorflow.python.keras.utils import np_utils
+from tensorflow.python.keras.utils.data_utils import get_file
+from tensorflow.python.keras.utils.np_utils import to_categorical
+
+
+from urllib.request import urlretrieve
+
+from os.path import isfile, isdir, getsize
+from os import mkdir, makedirs, remove, listdir
+from os import mkdir, makedirs, remove, listdir
+
+from tqdm import tqdm
+
+from imutils import paths
+
+from google.colab import drive
+
+from sklearn.model_selection import train_test_split
+
+## End of Library
+
+## Data Preparation
+#Import file form Google drive You can change your data to train but Please change your label
+drive.mount('/content/gdrive')    
+
+#Show Your data
+def show_image(X_data) :         
+  plt.imshow(np.squeeze(X_data))
+  plt.show()  
+  
+#Define size of image equal 100 by 100  
+IMG_HEIGHT,IMG_WIDTH = 100,100    
+
+#Object for read and convert data of image to array
+def read_image(image_path) :      
+  try :
+    # Read Image data
+    image= cv2.imread( image_path, cv2.COLOR_BGR2RGB)   
+    #resize of image ref from define
+    image=cv2.resize(image, (IMG_HEIGHT, IMG_WIDTH),interpolation = cv2.INTER_AREA) 
+    #use np array for performance ...
+    image=np.array(image)
+    #parse data type ...
+    image = image.astype('float32')
+    #normalize color value to 0-1 ...
+    image /= 255 
+    return image.tolist()
+  except :
+    return None
+  return None
+  
+  
+ # Object for classification types of image for preparation your data and label
+ def loadResolution() :
+  data = []
+  target = []
+
+  baseDirvePath ="/content/gdrive/MyDrive/Lettuce/"
+  # datasetPath = "/*Resolution/"
+  organicPath = "/Organic*Resolution/*/*.jpg"
+  conventionalPath = "/Conventional*Resolution/*/*.jpg"
+
+  organicFolder = glob.glob(baseDirvePath+organicPath)
+  conventionalFolder = glob.glob(baseDirvePath+conventionalPath)
+
+  data_count = len(organicFolder) + len(conventionalFolder)
+  count = 0
+  
+  print("data count :",data_count)
+
+  print("organic loading ...",len(organicFolder))
+  for organicFile in organicFolder :
+    count = count+1
+    image = read_image(organicFile)
+    if image != None :
+      data.append(image)
+      target.append(0)
+
+    if (count%100 == 0) : print("{} %".format(count*100/data_count))
+
+  print("organic loaded ...")
+  print("conventional loading ...",len(conventionalFolder))
+  for conventionalFile in conventionalFolder :
+    count = count+1
+    image = read_image(conventionalFile)
+    if image != None :
+      data.append(image)
+      target.append(1)
+    
+    if (count%100 == 0) : print("{} %".format(count*100/data_count))
+  return data,target
+  
+#Load file form Load Resolution Object
+image_data, image_target = loadResolution()
+
+# Check your data 
+print(len(image_data),len(image_target))
+show_image(image_data[2000])
+print(image_target[2000])
+
+
+## Train & Test Split
+# Spit data to test, train and validation 
+X_m, X_test, y_m, y_test = train_test_split(image_data, image_target, test_size=0.2, random_state=42, stratify=image_target)
+X_train, X_val, y_train, y_val = train_test_split(X_m, y_m, test_size=0.2, random_state=42, stratify=y_m)
+
+# Check size of data and Image
+print(len(X_test)+len(X_train)+len(X_val))
+show_image(X_train[0])
+
+## Model
+
+def get_cnn() :
+  inputs = Input(shape=(100,100,3,)) # (weight ,height , channel)
+  # using 2 conv2D Layer, Maybe you can use conv2D Layer more than 2 
+  output = Conv2D(filters=10,kernel_size=(5,5))(inputs)
+  output = MaxPooling2D(pool_size=(2,2))(output)
+  output = Conv2D(filters=10,kernel_size=(5,5))(output) 
+  output = Flatten()(output)
+  # Define node in hiddle layer of neural network is ReLU
+  output = Dense(100, activation='relu')(output)
+  # Define Last of Hidden Layer is sigmoid.
+  output = Dense(1,activation='sigmoid')(output)
+  model = Model(inputs,output)
+  model.compile(
+      optimizer=Adam(lr=0.00001),  
+      loss='binary_crossentropy', 
+      metrics=['accuracy']
+      )
+  model.summary()
+  return model
+  
+#Show detail of Cnn Model
+cnn_model = get_cnn()
+
+# train & test data
+history = cnn_model.fit(np.array(X_train),np.array(y_train),batch_size=64,epochs=20,verbose=1, validation_data=(np.array(X_val),np.array(y_val)))
+
+# Show result of training
+cnn_model.predict(np.array(X_train))
+
+# Show Graph of Accuracy
+plt.plot(history.history['accuracy'], label='accuracy')
+plt.plot(history.history['val_accuracy'], label = 'val_accuracy')
+plt.xlabel('Epoch')
+plt.ylabel('Accuracy')
+plt.ylim([0, 1])
+plt.xlim([0,20])
+plt.legend(loc='lower right')
+test_loss, test_acc =cnn_model.evaluate(np.array(X_val),np.array(y_val)  , verbose=1)
+
+# Show Graph of loss
+plt.plot(history.history['loss'], label='loss')
+plt.plot(history.history['val_loss'], label = 'val_loss')
+plt.xlabel('Epoch')
+plt.ylabel('Accuracy')
+plt.ylim([0, 1])
+plt.xlim([0,20])
+plt.legend(loc='lower right')
+
+#Check % Accuracy
+print(test_acc)
+
+# save model to h5 model for send to used in backend of application
+model = get_cnn()
+
+# Train the model.
+test_input = np.random.random((100, 32))
+test_target = np.random.random((100, 3))
+model.fit(np.array(X_train),np.array(y_train),batch_size=64,epochs=20,validation_data=(np.array(X_val),np.array(y_val)))
+
+# Calling `save('my_model.h5')` creates a h5 file `my_model.h5`.
+model.save("my_h5_model.h5")
+
+# It can be used to reconstruct the model identically.
+reconstructed_model = keras.models.load_model("my_h5_model.h5")
+
+# Let's check:
+np.testing.assert_allclose(
+model.predict(np.array(X_val))
+,reconstructed_model.predict(np.array(X_val))
+)
+# The reconstructed model is already compiled and has retained the optimizer
+# state, so training can resume:
+reconstructed_model.fit(np.array(X_val),np.array(y_val) )
