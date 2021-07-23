@@ -24,3 +24,4 @@ cv2.imwrite("cropped.png", cropped)
 tagged = cv2.rectangle(img.copy(), (x1,y1), (x2,y2), (0,255,0), 3, cv2.LINE_AA)
 cv2.imshow("tagged", tagged)
 cv2.waitKey()
+
