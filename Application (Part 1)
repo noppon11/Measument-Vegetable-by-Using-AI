@@ -1,3 +1,5 @@
+## Application is developped by Supakorn Chuenkeak
+
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.Intent;
