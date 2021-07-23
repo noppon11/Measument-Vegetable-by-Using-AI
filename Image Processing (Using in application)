@@ -1,0 +1,19 @@
+import cv2
+import numpy as np
+
+
+
+IMG_HEIGHT, IMG_WIDTH = 100,100
+
+img_path = cv2.imread("Red50.jpg") # You can change your image file. 
+
+image = cv2.cvtColor(np.array(img_path),cv2.COLOR_BGR2RGB)
+image=cv2.resize(image, (IMG_HEIGHT, IMG_WIDTH),interpolation = cv2.INTER_AREA)
+    #use np array for performance ...
+image=np.array(image)
+    #parse data type ...
+image = image.astype('float32')
+    #normalize color value to 0-1 ...
+image /= 255 
+
+print("image: ",image)
